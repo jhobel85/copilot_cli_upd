@@ -3,7 +3,7 @@
   "description": "Custom workflow management skills: orchestration, plugin creation, and superpowers safety checks.",
   "version": "1.0.0",
   "author": { "name": "jhobel85" },
-  "repository": "https://github.com/jhobel85/PersonalLife",
+  "repository": "https://github.com/jhobel85/copilot_cli_upd",
   "license": "MIT",
   "keywords": ["orchestration", "plugins", "safety", "workflow"],
   "skills": [

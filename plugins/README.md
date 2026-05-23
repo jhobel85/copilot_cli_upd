@@ -41,6 +41,10 @@ plugins/<name>/
   hooks/                       ← optional SessionStart hooks
 ```
 
+### Required fields in `plugin.json`
+
+`name`, `description`, `author`, and `repository` are **mandatory** — `copilot plugin install` fails without them.
+
 ## Adding a New Plugin
 
 Use the `create-copilot-plugin` skill for guided creation, or manually:

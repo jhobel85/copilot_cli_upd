@@ -2,8 +2,8 @@
   "name": "awesome-general-plugin",
   "description": "General-purpose skills useful in 99% of projects: codebase knowledge, security, documentation, planning, testing, and more.",
   "version": "1.0.0",
-  "author": { "name": "jhobel85" },
-  "repository": "https://github.com/jhobel85/PersonalLife",
+  "author": { "name": "github" },
+  "repository": "https://github.com/github/awesome-copilot",
   "license": "MIT",
   "keywords": ["general", "productivity", "security", "planning", "testing", "documentation"],
   "skills": [

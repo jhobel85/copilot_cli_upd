@@ -11,6 +11,8 @@
 
 ## Skills
 
+Skills are stored locally in this repo — update them manually from [`github/awesome-copilot`](https://github.com/github/awesome-copilot) when needed. Future skills from other sources can be added as additional local files.
+
 | Skill | Trigger | Description |
 |-------|---------|-------------|
 | `dotnet-best-practices` | Reviewing .NET/C# code quality | Checks naming, exceptions, performance, security, testing conventions |
