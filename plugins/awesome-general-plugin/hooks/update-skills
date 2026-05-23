@@ -28,24 +28,23 @@ COPILOT_HOME="${COPILOT_HOME:-$HOME/.copilot}"
 USER_SKILLS_DIR="$COPILOT_HOME/skills"
 INSTALLED_PLUGINS="$COPILOT_HOME/installed-plugins"
 
-# Build a set of skill names already covered (user-level + other plugins)
-declare -A covered
+covered_dir=$(mktemp -d)
+trap 'rm -rf "$covered_dir"' EXIT
 
 # User-level skills
 if [ -d "$USER_SKILLS_DIR" ]; then
     for dir in "$USER_SKILLS_DIR"/*/; do
         name=$(basename "$dir")
-        [ -f "$dir/SKILL.md" ] && covered[$name]=1
+        [ -f "$dir/SKILL.md" ] && touch "$covered_dir/$name"
     done
 fi
 
 # Skills in other installed plugins (exclude self)
 if [ -d "$INSTALLED_PLUGINS" ]; then
     while IFS= read -r skill_md; do
-        # Skip if inside our own plugin root
         case "$skill_md" in "$PLUGIN_ROOT"*) continue ;; esac
         name=$(basename "$(dirname "$skill_md")")
-        covered[$name]=1
+        touch "$covered_dir/$name"
     done < <(find "$INSTALLED_PLUGINS" -name "SKILL.md" 2>/dev/null)
 fi
 
@@ -60,8 +59,9 @@ for s in data.get('skills', []):
 
 updated=0
 skipped=0
+failed=0
 for skill in $skills; do
-    if [ "${covered[$skill]+_}" ]; then
+    if [ -e "$covered_dir/$skill" ]; then
         skipped=$((skipped + 1))
         continue
     fi
@@ -73,11 +73,15 @@ for skill in $skills; do
         updated=$((updated + 1))
     else
         rm -f "$dest.tmp"
+        failed=$((failed + 1))
     fi
 done
 
-date +%s > "$CACHE_FILE"
+# Only cache on full success — a failure keeps the next session retrying
+if [ "$failed" -eq 0 ]; then
+    date +%s > "$CACHE_FILE"
+fi
 
-if [ "$updated" -gt 0 ] || [ "$skipped" -gt 0 ]; then
-    echo "[awesome-general-plugin] Skills: $updated downloaded, $skipped already covered elsewhere"
+if [ "$updated" -gt 0 ] || [ "$skipped" -gt 0 ] || [ "$failed" -gt 0 ]; then
+    echo "[awesome-general-plugin] Skills: $updated downloaded, $skipped already covered, $failed failed"
 fi

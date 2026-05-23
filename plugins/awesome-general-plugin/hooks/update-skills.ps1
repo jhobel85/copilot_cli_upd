@@ -59,6 +59,7 @@ $skills = $data.skills |
 
 $updated  = 0
 $skipped  = 0
+$failed   = 0
 foreach ($skill in $skills) {
     if ($alreadyCovered.Contains($skill)) {
         $skipped++
@@ -72,12 +73,15 @@ foreach ($skill in $skills) {
         Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
         $updated++
     } catch {
-        # Skill not found on awesome-copilot; keep existing file if present
+        $failed++
     }
 }
 
-[long](Get-Date -UFormat %s) | Set-Content $cacheFile
+# Only cache on full success — a failure keeps the next session retrying
+if ($failed -eq 0) {
+    [long](Get-Date -UFormat %s) | Set-Content $cacheFile
+}
 
-if ($updated -gt 0 -or $skipped -gt 0) {
-    Write-Host "[awesome-general-plugin] Skills: $updated downloaded, $skipped already covered elsewhere"
+if ($updated -gt 0 -or $skipped -gt 0 -or $failed -gt 0) {
+    Write-Host "[awesome-general-plugin] Skills: $updated downloaded, $skipped already covered, $failed failed"
 }

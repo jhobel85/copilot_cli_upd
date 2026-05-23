@@ -5,7 +5,7 @@ Custom workflow management skills: orchestration, plugin creation, and commit sa
 ## Install
 
 ```powershell
-.\Install-Plugins.ps1 -Local -Plugin custom-general-plugin   # local clone
+.\Install-Plugins.ps1 -Local -Plugin custom-general-plugin   # local → use .\copilot-dev.ps1
 .\Install-Plugins.ps1 -Plugin custom-general-plugin          # from GitHub
 ```
 

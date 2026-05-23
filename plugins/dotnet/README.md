@@ -5,7 +5,7 @@
 ## Install
 
 ```powershell
-.\Install-Plugins.ps1 -Local -Plugin dotnet   # local clone
+.\Install-Plugins.ps1 -Local -Plugin dotnet   # local → use .\copilot-dev.ps1
 .\Install-Plugins.ps1 -Plugin dotnet          # from GitHub
 ```
 

@@ -5,14 +5,15 @@ Copilot CLI plugins bundle skills under a single installable name.
 ## Install
 
 ```powershell
-# Local clone — no push required (default for development)
+# Local clone — generates copilot-dev.ps1 wrapper (no push required)
 .\Install-Plugins.ps1 -Local [-Plugin <name>]
+# then: .\copilot-dev.ps1 instead of copilot
 
 # From GitHub — auto-detects repo from git remote origin
 .\Install-Plugins.ps1 [-Plugin <name>]
 ```
 
-Bash: same flags with `./install-plugins.sh [--local] [<name>]`
+Bash: same flags with `./install-plugins.sh [--local] [<name>]` → generates `copilot-dev.sh`
 
 ## Available Plugins
 
@@ -46,5 +47,5 @@ Use the `create-copilot-plugin` skill for guided creation, or manually:
 
 1. Create `plugins/<name>/.github/plugin/plugin.json`
 2. Add `skills/<skill-name>/SKILL.md` files
-3. Run `.\Install-Plugins.ps1 -Local -Plugin <name>`
+3. Run `.\Install-Plugins.ps1 -Local -Plugin <name>` → then use `.\copilot-dev.ps1`
 4. Verify: `copilot plugin list`

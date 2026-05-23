@@ -18,8 +18,9 @@ plugins/
 ## Quick Start
 
 ```powershell
-# 1. Install plugins (from local clone — no push needed)
+# 1. Install plugins (local clone — generates .\copilot-dev.ps1 wrapper)
 .\Install-Plugins.ps1 -Local
+# Use .\copilot-dev.ps1 instead of copilot for local dev sessions
 
 # 2. Install AI commit guard
 .\git-hooks\Install-GitHooks.ps1 [-Global]
