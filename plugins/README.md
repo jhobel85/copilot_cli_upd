@@ -1,0 +1,50 @@
+# Plugins
+
+Copilot CLI plugins bundle skills under a single installable name.
+
+## Install
+
+```powershell
+# Local clone — no push required (default for development)
+.\Install-Plugins.ps1 -Local [-Plugin <name>]
+
+# From GitHub — auto-detects repo from git remote origin
+.\Install-Plugins.ps1 [-Plugin <name>]
+```
+
+Bash: same flags with `./install-plugins.sh [--local] [<name>]`
+
+## Available Plugins
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| [awesome-general-plugin](awesome-general-plugin/README.md) | Downloaded live from `github/awesome-copilot` | General-purpose skills |
+| [custom-general-plugin](custom-general-plugin/README.md) | `orchestrator-manager`, `create-copilot-plugin`, `superpowers-safety` | Workflow management |
+| [dotnet](dotnet/README.md) | `dotnet-best-practices`, `dotnet-design-pattern-review` | .NET/C# code quality |
+
+## Plugin Management
+
+| Action | Command |
+|--------|---------|
+| List | `copilot plugin list` |
+| Disable | `copilot plugin disable <name>` |
+| Enable | `copilot plugin enable <name>` |
+| Update | Re-run install script after changes |
+
+## Plugin Structure
+
+```
+plugins/<name>/
+  .github/plugin/plugin.json   ← REQUIRED
+  skills/<skill-name>/SKILL.md
+  hooks/                       ← optional SessionStart hooks
+```
+
+## Adding a New Plugin
+
+Use the `create-copilot-plugin` skill for guided creation, or manually:
+
+1. Create `plugins/<name>/.github/plugin/plugin.json`
+2. Add `skills/<skill-name>/SKILL.md` files
+3. Run `.\Install-Plugins.ps1 -Local -Plugin <name>`
+4. Verify: `copilot plugin list`

@@ -19,8 +19,6 @@
     "./skills/create-github-issues-feature-from-implementation-plan",
     "./skills/create-implementation-plan",
     "./skills/drawio",
-    "./skills/playwright-explore-website",
-    "./skills/playwright-generate-test",
     "./skills/update-implementation-plan"
   ]
 }

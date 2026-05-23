@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# update-skills: Downloads skill SKILL.md files from github/awesome-copilot.
+# Skips skills already present in the user-level copilot skills directory or in other installed plugins.
+# Runs at SessionStart with a 24-hour cache to avoid hitting GitHub every session.
+
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+PLUGIN_JSON="$PLUGIN_ROOT/.github/plugin/plugin.json"
+REMOTE_BASE="https://raw.githubusercontent.com/github/awesome-copilot/main/skills"
+CACHE_FILE="$PLUGIN_ROOT/.skills-cache-timestamp"
+CACHE_TTL=86400  # 24 hours
+
+# Skip if cache is still fresh
+if [ -f "$CACHE_FILE" ]; then
+    last_update=$(cat "$CACHE_FILE" 2>/dev/null || echo 0)
+    now=$(date +%s 2>/dev/null || echo 0)
+    if [ "$now" -gt 0 ] && [ $((now - last_update)) -lt $CACHE_TTL ]; then
+        exit 0
+    fi
+fi
+
+# Requires python3 to parse plugin.json
+if ! command -v python3 &>/dev/null; then
+    exit 0
+fi
+
+# Resolve copilot home
+COPILOT_HOME="${COPILOT_HOME:-$HOME/.copilot}"
+USER_SKILLS_DIR="$COPILOT_HOME/skills"
+INSTALLED_PLUGINS="$COPILOT_HOME/installed-plugins"
+
+# Build a set of skill names already covered (user-level + other plugins)
+declare -A covered
+
+# User-level skills
+if [ -d "$USER_SKILLS_DIR" ]; then
+    for dir in "$USER_SKILLS_DIR"/*/; do
+        name=$(basename "$dir")
+        [ -f "$dir/SKILL.md" ] && covered[$name]=1
+    done
+fi
+
+# Skills in other installed plugins (exclude self)
+if [ -d "$INSTALLED_PLUGINS" ]; then
+    while IFS= read -r skill_md; do
+        # Skip if inside our own plugin root
+        case "$skill_md" in "$PLUGIN_ROOT"*) continue ;; esac
+        name=$(basename "$(dirname "$skill_md")")
+        covered[$name]=1
+    done < <(find "$INSTALLED_PLUGINS" -name "SKILL.md" 2>/dev/null)
+fi
+
+skills=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+for s in data.get('skills', []):
+    if s.startswith('./skills/'):
+        print(s[len('./skills/'):])
+" "$PLUGIN_JSON" 2>/dev/null)
+
+updated=0
+skipped=0
+for skill in $skills; do
+    if [ "${covered[$skill]+_}" ]; then
+        skipped=$((skipped + 1))
+        continue
+    fi
+    dest="$PLUGIN_ROOT/skills/$skill/SKILL.md"
+    mkdir -p "$(dirname "$dest")"
+    url="$REMOTE_BASE/$skill/SKILL.md"
+    if curl -fsSL --max-time 10 "$url" -o "$dest.tmp" 2>/dev/null; then
+        mv "$dest.tmp" "$dest"
+        updated=$((updated + 1))
+    else
+        rm -f "$dest.tmp"
+    fi
+done
+
+date +%s > "$CACHE_FILE"
+
+if [ "$updated" -gt 0 ] || [ "$skipped" -gt 0 ]; then
+    echo "[awesome-general-plugin] Skills: $updated downloaded, $skipped already covered elsewhere"
+fi

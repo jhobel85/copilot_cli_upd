@@ -1,0 +1,4 @@
+# Skills are downloaded at runtime from github/awesome-copilot - not committed
+skills/
+# Cache file written by update-skills hook
+.skills-cache-timestamp

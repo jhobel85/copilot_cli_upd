@@ -32,9 +32,63 @@ The `plugin.json` file is **mandatory** — without it `copilot plugin install` 
 
 Ask the user:
 - **Plugin name** (letters, numbers, hyphens only, e.g. `dotnet`)
-- **Target GitHub repo** for hosting (e.g. `jhobel85/PersonalLife`)
+- **Target GitHub repo** for hosting (e.g. `<owner>/<repo>` — auto-detected from `git remote origin`)
 - **Path prefix** in repo (e.g. `plugins`)
 - **Skills to include** — name + source for each
+
+### 1a. Gap analysis — only include missing skills
+
+Before selecting skills, audit what is **already available** in the user's Copilot space so the new plugin only adds what is genuinely missing.
+
+**Step 1 — Collect all currently covered skill names:**
+
+```powershell
+$copilotHome = Join-Path $env:USERPROFILE ".copilot"
+$covered = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+# User-level skills (~/.copilot/skills/)
+Get-ChildItem (Join-Path $copilotHome "skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    if (Test-Path (Join-Path $_.FullName "SKILL.md")) { [void]$covered.Add($_.Name) }
+}
+
+# Skills in all installed plugins (~/.copilot/installed-plugins/**/skills/)
+Get-ChildItem (Join-Path $copilotHome "installed-plugins") -Recurse -Filter "SKILL.md" -ErrorAction SilentlyContinue | ForEach-Object {
+    [void]$covered.Add((Split-Path (Split-Path $_.FullName) -Leaf))
+}
+
+Write-Host "=== Already covered ($($covered.Count) skills) ==="
+$covered | Sort-Object | ForEach-Object { Write-Host "  ✓ $_" }
+```
+
+**Step 2 — Identify skills needed by the project:**
+
+Inspect the project's tech stack (languages, frameworks, tooling) to determine which skill categories are relevant. Sources to check:
+- File extensions / project files (`.csproj`, `package.json`, `go.mod`, `Dockerfile`, etc.)
+- `README.md` / `CONTRIBUTING.md` for stated tooling
+- Awesome-copilot for matching skill names: `https://github.com/github/awesome-copilot/tree/main/skills`
+
+**Step 3 — Compute the gap (candidate skills minus covered):**
+
+```powershell
+# Skills you identified as relevant for this project:
+$candidates = @(
+    "dotnet-best-practices",
+    "security-best-practices",
+    "test-driven-development"
+    # ... add others relevant to the project
+)
+
+$gaps = $candidates | Where-Object { -not $covered.Contains($_) }
+
+Write-Host "`n=== Skills to include in new plugin (gaps only) ==="
+$gaps | ForEach-Object { Write-Host "  + $_" }
+
+Write-Host "`n=== Skipped (already covered) ==="
+($candidates | Where-Object { $covered.Contains($_) }) | ForEach-Object { Write-Host "  ✓ $_ (already present)" }
+```
+
+**Present the gap list to the user for confirmation before proceeding.**  
+Only include the confirmed gap skills in `plugin.json`.
 
 ### 2. Locate source SKILL.md files
 
@@ -250,3 +304,187 @@ Get-Content "$HOME\.copilot\plugins-registry.json" | ConvertFrom-Json | Select-O
 - **Manually copying files or editing `config.json`** — Does NOT persist across restarts; only `copilot plugin install` creates a durable install
 - **Not verifying after install** — Always run `copilot plugin list` and confirm the plugin appears; report failure if it does not
 - **Repo is private without auth** — Plugin install may fail if the repo is not accessible
+
+---
+
+## Full Project Copilot Environment Setup
+
+Beyond plugins, a well-configured project repo typically includes four additional components. Set them up in this order when bootstrapping a new project.
+
+### Recommended repo layout
+
+```
+<repo-root>/
+  Instructions/
+    src/
+      layer.meta.md        ← edit these source layers
+      layer.dev.md
+      layer.agentic.md
+    build-instructions.ps1 ← assembles the outputs below
+    copilot-instructions.meta.md     ← generated, DO NOT edit
+    copilot-instructions.dev.md      ← generated, DO NOT edit
+    copilot-instructions.agentic.md  ← generated, DO NOT edit
+  MCP/
+    mcp-config.json        ← MCP server definitions
+  Scripts/
+    *.ps1 / *.sh           ← utility scripts
+  git-hooks/
+    git-autocommit-block   ← AI commit guard (sh)
+    pre-commit             ← delegates to guard (sh)
+    Install-GitHooks.ps1   ← installer script
+  plugins/
+    <plugin-name>/
+      .github/plugin/plugin.json
+      hooks/
+        hooks.json
+        ...
+```
+
+---
+
+### 1. Copilot Instructions (layered system)
+
+Instructions tell the AI agent how to behave. The repo uses **three additive layers** so different contexts load only what they need.
+
+| Output file | Layers included | Use when |
+|---|---|---|
+| `copilot-instructions.meta.md` | meta only | minimal context (git rules, ask vs decide) |
+| `copilot-instructions.dev.md` | meta + dev | standard coding sessions (TDD, rubber duck, code quality) |
+| `copilot-instructions.agentic.md` | meta + dev + agentic | fleet agents, orchestrator, memory graph |
+
+**Source layers** live in `Instructions/src/`. Always edit the source files, never the generated outputs.
+
+**Regenerate outputs** after any source edit:
+
+```powershell
+.\Instructions\build-instructions.ps1
+```
+
+**Activate for a project** — symlink or copy the right output to `.github/copilot-instructions.md`:
+
+```powershell
+# For a standard dev session:
+Copy-Item Instructions\copilot-instructions.dev.md .github\copilot-instructions.md
+
+# Or point the CLI at a specific file via /instructions command inside copilot
+```
+
+**Layer content guide:**
+- `layer.meta.md` — Git rules, ask-vs-decide, memory access policy
+- `layer.dev.md` — TDD mandate, rubber duck triggers, superpowers skill table, code quality rules
+- `layer.agentic.md` — Memory graph write rules, fleet coordination, convergence criteria, stall prevention
+
+---
+
+### 2. Git Hooks — AI Commit Guard
+
+Blocks all `git commit` calls unless a human explicitly sets `GIT_HUMAN_APPROVED=1`. Prevents AI agents and autopilot from committing without approval.
+
+**Files:**
+
+| File | Purpose |
+|---|---|
+| `git-hooks/git-autocommit-block` | Core guard logic (POSIX sh) |
+| `git-hooks/pre-commit` | Git entry point — delegates to guard |
+| `git-hooks/Install-GitHooks.ps1` | Installer (local repo or global) |
+
+**Install locally** (this repo only):
+
+```powershell
+.\git-hooks\Install-GitHooks.ps1
+```
+
+**Install globally** (all repos on this machine):
+
+```powershell
+.\git-hooks\Install-GitHooks.ps1 -Global
+```
+
+**Uninstall:**
+
+```powershell
+.\git-hooks\Install-GitHooks.ps1 -Uninstall          # local
+.\git-hooks\Install-GitHooks.ps1 -Global -Uninstall  # global
+```
+
+**To commit as a human after installation:**
+
+```powershell
+# PowerShell
+$env:GIT_HUMAN_APPROVED = 1; git commit -m "your message"
+```
+
+```bash
+# Git Bash / WSL
+GIT_HUMAN_APPROVED=1 git commit -m "your message"
+```
+
+VS Code Source Control commits are always allowed automatically (detected via `VSCODE_GIT_IPC_HANDLE`).
+
+**Bypass (use sparingly):**
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+---
+
+### 3. Scripts
+
+Utility scripts live in `Scripts/`. They are standalone — no install step required, just run directly.
+
+| Script | Purpose |
+|---|---|
+| `convert-onenote-to-markdown.ps1` | Converts OneNote exports to Markdown (PowerShell) |
+| `convert-onenote-to-markdown.sh` | Same conversion for Unix/WSL |
+| `transformFilesToMd.sh` | Batch-transforms files to Markdown format |
+
+**Run a script:**
+
+```powershell
+.\Scripts\convert-onenote-to-markdown.ps1
+```
+
+When adding new scripts: place them in `Scripts/`, use descriptive kebab-case names, and document purpose in a comment at the top.
+
+---
+
+### 4. MCP Servers
+
+MCP (Model Context Protocol) servers extend the AI agent with additional tools. Configuration lives in `MCP/mcp-config.json`.
+
+**Current configuration:**
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}
+```
+
+The `memory` server provides a persistent **knowledge graph** for cross-session context. The orchestrator agent reads and writes it; sub-agents and fleet workers read only.
+
+**Activate MCP config in the CLI:**
+
+```
+/mcp add --config MCP/mcp-config.json
+```
+
+Or merge entries into `~/.copilot/mcp.json` for user-level availability across all projects.
+
+**Adding a new MCP server:**
+
+```json
+{
+  "mcpServers": {
+    "memory": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-memory"] },
+    "my-server": { "command": "node", "args": ["path/to/server.js"] }
+  }
+}
+```
+
+Then run `/mcp` inside the Copilot CLI to verify the server appears and connects.
