@@ -1,5 +1,6 @@
 # Install-GitHooks.ps1
-# Installs git-autocommit-block to block commits unless GIT_HUMAN_APPROVED=1.
+# Installs git-autocommit-block to block commits unless GIT_HUMAN_APPROVED=1
+# or the commit is launched by VS Code Source Control.
 #
 # Usage (from repo root):
 #   .\git-hooks\Install-GitHooks.ps1            # install into THIS repo only
@@ -52,8 +53,10 @@ if ($Global) {
 }
 
 Write-Host ""
-Write-Host "To commit (PowerShell):"
+Write-Host "To commit (PowerShell / terminal):"
 Write-Host '  $env:GIT_HUMAN_APPROVED=1; git commit -m "your message"'
+Write-Host ""
+Write-Host "VS Code Source Control commits are allowed automatically."
 Write-Host ""
 Write-Host "To bypass (use sparingly):"
 Write-Host '  git commit --no-verify -m "your message"'

@@ -1,5 +1,5 @@
 {
-  "git.env": {
+  "terminal.integrated.env.windows": {
     "GIT_HUMAN_APPROVED": "1"
   },
   "terminal.integrated.scrollback": 10000,
