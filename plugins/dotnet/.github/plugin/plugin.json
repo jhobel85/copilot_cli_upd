@@ -1,0 +1,20 @@
+{
+  "name": "dotnet",
+  "description": "Custom .NET/C# skills for code quality, best practices, and design pattern reviews.",
+  "version": "1.0.0",
+  "author": {
+    "name": "jhobel85"
+  },
+  "repository": "https://github.com/jhobel85/PersonalLife",
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "csharp",
+    "bestpractices",
+    "designpatterns"
+  ],
+  "skills": [
+    "./skills/dotnet-best-practices",
+    "./skills/dotnet-design-pattern-review"
+  ]
+}

@@ -1,0 +1,133 @@
+---
+name: orchestrator-manager
+description: 'Use when managing complex multi-step tasks via subagent delegation, safety checks, and human approval gates.'
+---
+
+# Orchestrator-Manager Skill
+
+Purpose:
+- Manage complex multi-step tasks by decomposing them into scoped subagent work, running safety checks, and gating human approvals.
+- Enforce the subagent contract: limited scope, no direct repo changes, explicit authorization required.
+- Provide a guarded workflow template: plan → delegate → collect → validate → gate → execute.
+
+## Responsibilities
+
+### 1. Task Decomposition
+- Analyze the user request and break it into independent or sequenced subtasks.
+- Assign each subtask to an appropriate subagent (brainstorming, writing-plans, executing-plans, code-review, etc.).
+- Set scope boundaries: what each subagent can read/write, what requires approval.
+
+### 2. Subagent Spawning & Monitoring
+- Launch subagents with explicit instructions: scope, inputs, outputs, and approval requirements.
+- Each subagent works in isolation and returns results (no side effects).
+- Collect outputs: logs, diffs, test results, decisions.
+
+### 3. Safety Checks (Integrated)
+- Before proposing any commit/push action, ALWAYS invoke the `superpowers-safety` SKILL.
+- Parse the report: pass/fail on forbidden phrases, remediation suggestions.
+- If safety check fails: surface findings to user, offer remediation options, do NOT proceed to approval gate.
+- If safety check passes: continue to approval gate and present to user.
+
+### 4. Aggregation & Decision
+- Synthesize results from all subagents into a single, human-readable summary.
+- Include file diffs, test outcomes, and next steps.
+- Prepare an approval request with a time-limited approval token.
+
+### 5. Human Gate
+- Present the aggregated decision and approval request to the user.
+- Require an explicit approval token (e.g., `APPROVE_COMMIT:xyz789`) to proceed.
+- Do not execute any side-effecting action (commit, push, PR) without the token.
+
+## Subagent Contract
+
+### Scope
+- Each subagent receives a scoped prompt with explicit boundaries.
+- Inputs: task description, relevant files, success criteria.
+- Outputs: results, logs, no direct repo modifications.
+
+### No Side Effects
+- Subagents do NOT:
+  - Run `git commit` or `git push`
+  - Create PRs
+  - Delete files
+  - Modify protected files
+- Subagents MAY:
+  - Read files and explore
+  - Generate code/text
+  - Run tests/builds
+  - Create temporary session artifacts
+
+### Error Handling
+- Subagent fails: collect error, report to manager, ask user for retry or alternative action.
+- Subagent timeout: escalate to user.
+- Subagent exceeds scope: orchestrator truncates and resets.
+
+## Workflow Template
+
+```
+1. ANALYZE: User request → decompose into subtasks
+2. DELEGATE: For each subtask:
+   - Create scoped prompt
+   - Spawn subagent
+   - Await results
+3. COLLECT: Gather all outputs
+4. VALIDATE: Check consistency, coverage, no conflicts
+5. SAFETY: Invoke superpowers-safety; block if forbidden phrases found
+6. AGGREGATE: Synthesize into human-readable summary + diffs
+7. GATE: Present to user with approval token request
+8. APPROVED: Present the exact commands for the user to execute (commit, push, PR)
+9. REPORT: Log outcomes and final status
+```
+
+## Example: Implementing a Feature
+
+**User Request:** "Add user authentication to the API"
+
+**Decomposition:**
+- Task 1: Design auth architecture (brainstorming SKILL)
+- Task 2: Write implementation plan (writing-plans SKILL)
+- Task 3: Implement code changes (executing-plans SKILL)
+- Task 4: Review code (code-review SKILL)
+- Task 5: Run tests and commit (manager gate + safety check)
+
+**For each task:**
+1. Manager spawns subagent with scoped prompt
+2. Subagent returns design doc, plan, code, or review
+3. Manager collects and validates
+4. At commit step: run superpowers-safety, ask user for approval token
+
+**User Approval:**
+```
+Manager: Ready to commit. Files: src/auth.ts, tests/auth.test.ts. 
+No forbidden phrases detected (safety check passed).
+Approve? Respond with: APPROVE_COMMIT:abc123
+```
+
+**User:** `APPROVE_COMMIT:abc123`
+
+**Manager:** Provides the exact commands for the user to run:
+```
+git commit -m "feat: add user authentication"
+git push
+```
+
+## Key Rules
+
+1. **Always decompose large tasks** — single subagents have limited context.
+2. **Gate all repo changes** — safety check + approval token required.
+3. **Transparency** — include diffs and logs in user handoff.
+4. **Error recovery** — if a subagent fails, offer alternatives (retry, skip, escalate).
+5. **Audit trail** — log all decisions, approvals, and outcomes.
+
+## Configuration
+
+See orchestrator config or instructions for:
+- Approval token format and TTL
+- Orchestration flags (manager_required, safety_checks enabled)
+- Forbidden phrases list
+
+## Notes
+
+- This SKILL is invoked by the user or by other SKILLs when large delegated work is needed.
+- The orchestrator does NOT replace user judgment — it amplifies visibility and gating.
+- Pinning/forking the Superpowers plugin is recommended to preserve orchestration rules across updates.

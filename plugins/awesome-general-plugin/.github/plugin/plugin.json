@@ -1,0 +1,26 @@
+{
+  "name": "awesome-general-plugin",
+  "description": "General-purpose skills useful in 99% of projects: codebase knowledge, security, documentation, planning, testing, and more.",
+  "version": "1.0.0",
+  "author": { "name": "jhobel85" },
+  "repository": "https://github.com/jhobel85/PersonalLife",
+  "license": "MIT",
+  "keywords": ["general", "productivity", "security", "planning", "testing", "documentation"],
+  "skills": [
+    "./skills/acquire-codebase-knowledge",
+    "./skills/add-educational-comments",
+    "./skills/cli-mastery",
+    "./skills/copilot-usage-metrics",
+    "./skills/mentoring-juniors",
+    "./skills/microsoft-docs",
+    "./skills/security-best-practices",
+    "./skills/ai-prompt-engineering-safety-review",
+    "./skills/breakdown-feature-implementation",
+    "./skills/create-github-issues-feature-from-implementation-plan",
+    "./skills/create-implementation-plan",
+    "./skills/drawio",
+    "./skills/playwright-explore-website",
+    "./skills/playwright-generate-test",
+    "./skills/update-implementation-plan"
+  ]
+}
