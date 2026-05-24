@@ -10,6 +10,6 @@
     "./skills/orchestrator-manager",
     "./skills/create-copilot-plugin",
     "./skills/system-audit",
-    "./skills/system-summary"
+   "./skills/system-summary"
   ]
 }
