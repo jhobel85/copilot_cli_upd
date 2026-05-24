@@ -1,10 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Installs all Copilot CLI plugins from this repository.
+    Installs or uninstalls Copilot CLI plugins from this repository.
 
 .DESCRIPTION
-    Two modes:
+    Three modes:
 
     DEFAULT (from GitHub):
       Detects the GitHub owner/repo from git remote origin, then runs
@@ -14,6 +14,10 @@
       Before each install, any existing version of the plugin is uninstalled
       so the install is always clean. The superpowers marketplace plugin is
       also installed by default (disable with -NoSuperpowers).
+
+    UNINSTALL ALL (-UninstallAll flag):
+      Uninstalls all currently installed Copilot CLI plugins. By default
+      includes the superpowers marketplace plugin (disable with -NoSuperpowers).
 
     LOCAL (-Local flag):
       Generates a copilot-dev.ps1 wrapper script in the repo root that
@@ -29,7 +33,10 @@
     Generate the copilot-dev.ps1 wrapper for local dev sessions.
 
 .PARAMETER NoSuperpowers
-    Skip installing the superpowers marketplace plugin.
+    Skip the superpowers marketplace plugin (applies to both install and uninstall).
+
+.PARAMETER UninstallAll
+    Uninstall all currently installed plugins instead of installing.
 
 .EXAMPLE
     # Install all plugins from GitHub (after pushing)
@@ -46,12 +53,19 @@
 
     # Generate local dev wrapper for one plugin
     .\Install-Plugins.ps1 -Plugin dotnet -Local
+
+    # Uninstall all plugins (including superpowers)
+    .\Install-Plugins.ps1 -UninstallAll
+
+    # Uninstall all plugins except superpowers
+    .\Install-Plugins.ps1 -UninstallAll -NoSuperpowers
 #>
 
 param(
     [string]$Plugin,
     [switch]$Local,
-    [switch]$NoSuperpowers
+    [switch]$NoSuperpowers,
+    [switch]$UninstallAll
 )
 
 Set-StrictMode -Version Latest
@@ -98,8 +112,7 @@ copilot $pluginArgs @args
     return
 }
 
-# ── GITHUB MODE ───────────────────────────────────────────────────────────────
-# Resolves the GitHub owner/repo from origin remote and runs copilot plugin install.
+# ── HELPERS ───────────────────────────────────────────────────────────────────
 function Get-GithubRepo {
     $url = git remote get-url origin 2>&1
     if ($LASTEXITCODE -ne 0) { throw "No git remote 'origin' found. Are you inside a cloned git repository?" }
@@ -134,9 +147,36 @@ function Invoke-PluginReinstall {
     copilot plugin install $Ref
 }
 
-$repo     = Get-GithubRepo
+# ── UNINSTALL-ALL MODE ────────────────────────────────────────────────────────
+if ($UninstallAll) {
+    $installed = Get-InstalledPluginNames
+    if ($installed.Count -eq 0) {
+        Write-Host "No plugins currently installed." -ForegroundColor Yellow
+        return
+    }
+
+    $toRemove = if ($NoSuperpowers) {
+        $installed | Where-Object { $_ -ne 'superpowers' }
+    } else {
+        $installed
+    }
+
+    $count = 0
+    foreach ($name in $toRemove) {
+        Write-Host "Uninstalling '$name' ..." -ForegroundColor Yellow
+        copilot plugin uninstall $name
+        $count++
+    }
+
+    Write-Host ""
+    Write-Host "$count plugin(s) uninstalled." -ForegroundColor Green
+    return
+}
+
+# ── GITHUB MODE ───────────────────────────────────────────────────────────────
+$repo      = Get-GithubRepo
 $installed = Get-InstalledPluginNames
-$count    = 0
+$count     = 0
 
 foreach ($dir in $pluginDirs) {
     $name = Split-Path $dir -Leaf
