@@ -190,13 +190,15 @@ function Invoke-PluginReinstall {
         try {
             $Installed = Get-InstalledPluginNames
         } catch {
-            $Installed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $Installed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
         }
     }
+
     if ($dryRun) {
         Write-Host "[DryRun] Would reinstall '$Name' from '$Ref'." -ForegroundColor Cyan
-        return
+    return $true
     }
+
     try {
         if ($Installed -and $Installed.Contains($Name)) {
             Write-Host "  Uninstalling existing '$Name' ..." -ForegroundColor Yellow
@@ -205,13 +207,15 @@ function Invoke-PluginReinstall {
     } catch {
         Write-Warning "Failed to detect/uninstall existing plugin '$Name': $_"
     }
+
     Write-Host "Installing $Ref ..." -ForegroundColor Cyan
     try {
         copilot plugin install $Ref
-    } catch {
-        Write-Warning ("Install failed for {0}: {1}" -f $Ref, $_)
-        throw $_
-    }
+    return $true
+} catch {
+    Write-Warning ("Install failed for {0}: {1}" -f $Ref, $_)
+    return $false
+}
 }
 
 # ── UNINSTALL-ALL MODE ────────────────────────────────────────────────────────
@@ -254,30 +258,35 @@ foreach ($dir in $pluginDirs) {
         continue
     }
 
-    Invoke-PluginReinstall -Name $name -Ref "${repo}:plugins/${name}" -Installed $installed
-    $count++
+    $ok = Invoke-PluginReinstall -Name $name -Ref "${repo}:plugins/${name}" -Installed $installed
+    if ($ok) { $count++ } else { Write-Warning "Plugin install failed or skipped: $name" }
 }
 
 # ── SUPERPOWERS MARKETPLACE ───────────────────────────────────────────────────
 if (-not $NoSuperpowers) {
     # Prefer marketplace install using the marketplace specifier (works like command line: superpowers@superpowers-marketplace)
     $marketRef = 'superpowers@superpowers-marketplace'
+    $ok = $false
     try {
-        Invoke-PluginReinstall -Name 'superpowers' -Ref $marketRef -Installed $installed
-        $count++
+        $ok = Invoke-PluginReinstall -Name 'superpowers' -Ref $marketRef -Installed $installed
     } catch {
-        Write-Warning "Marketplace install failed for $marketRef. Falling back to repository-based check."
+        Write-Warning ("Marketplace install attempt for {0} raised an error: {1}" -f $marketRef, $_)
+        $ok = $false
+    }
+    if (-not $ok) {
         $owner = 'obra'; $repoName = 'superpowers-marketplace'
         $hasPluginJson = Test-RemotePluginJson -Owner $owner -Repo $repoName
         if (-not $hasPluginJson) {
             Write-Warning "Skipping 'superpowers' — No plugin.json found in $owner/$repoName (common locations). Install skipped."
         } else {
-            Invoke-PluginReinstall -Name 'superpowers' -Ref "$owner/$repoName" -Installed $installed
-            $count++
+            $ok = Invoke-PluginReinstall -Name 'superpowers' -Ref "$owner/$repoName" -Installed $installed
         }
     }
+    if ($ok) { $count++ } else { Write-Warning "Superpowers plugin not installed." }
 }
 
 Write-Host ""
-Write-Host "$count plugin(s) installed." -ForegroundColor Green
+$finalInstalled = Get-InstalledPluginNames
+$visibleCount = $finalInstalled.Count
+Write-Host "$visibleCount plugin(s) installed." -ForegroundColor Green
 
