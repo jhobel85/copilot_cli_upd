@@ -209,14 +209,15 @@ function Populate-LocalSkillsFromRepo {
     param([string]$LocalPluginDir,[string]$Owner,[string]$Repo)
 
     $pluginJsonPath = Join-Path $LocalPluginDir '.github\plugin\plugin.json'
-    if (-not (Test-Path $pluginJsonPath)) { return }
+    if (-not (Test-Path $pluginJsonPath)) { return $false }
     try {
         $pj = Get-Content $pluginJsonPath -Raw | ConvertFrom-Json
     } catch {
-        return
+        return $false
     }
 
     $localPluginName = Split-Path $LocalPluginDir -Leaf
+    $allFound = $true
     foreach ($skillRel in $pj.skills) {
         $skillName = Split-Path $skillRel -Leaf
         $skillsDir = Join-Path $LocalPluginDir 'skills'
@@ -260,14 +261,17 @@ function Populate-LocalSkillsFromRepo {
             }
         }
 
-        if ($content) {
+            if ($content) {
             New-Item -ItemType Directory -Path $skillDir -Force | Out-Null
             $content | Set-Content -Path $skillFile -Encoding UTF8
             Write-Host "Fetched skill '$skillName' into $skillFile" -ForegroundColor Green
         } else {
-            throw "Missing remote SKILL.md for '$skillName' in $Owner/$Repo. Install aborted — upstream repository does not contain the required skill file."
+                Write-Warning "Could not find remote SKILL.md for '$skillName' in $Owner/$Repo."
+                $allFound = $false
+            }
         }
-    }
+
+        return $allFound
 }
 
 function Invoke-PluginReinstall {
@@ -358,7 +362,19 @@ foreach ($dir in $pluginDirs) {
                 $parts = $ownerRepo.Split('/')
                 if ($parts.Count -ge 2) {
                     $owner = $parts[0]; $repoName = $parts[1]
-                    Populate-LocalSkillsFromRepo -LocalPluginDir $dir -Owner $owner -Repo $repoName
+
+                    $allFetched = Populate-LocalSkillsFromRepo -LocalPluginDir $dir -Owner $owner -Repo $repoName
+                    if (-not $allFetched) {
+                        Write-Warning "Skipping installation of '$name' — failed to fetch all remote skills from $owner/$repoName." -ForegroundColor Yellow
+                        continue
+                    }
+
+                    # Install from the local plugin directory (populated from upstream)
+                    $localRef = (Resolve-Path $dir).Path
+                    $ok = Invoke-PluginReinstall -Name $name -Ref $localRef -Installed $installed
+                    if ($ok) { $count++ } else { Write-Warning "Plugin install failed or skipped: $name" }
+
+                    continue
                 }
             }
         }
@@ -368,6 +384,7 @@ foreach ($dir in $pluginDirs) {
         continue
     }
 
+    # Fall back to installing from the repository reference if parsing failed or no upstream mapping
     $ok = Invoke-PluginReinstall -Name $name -Ref "${repo}:plugins/${name}" -Installed $installed
     if ($ok) { $count++ } else { Write-Warning "Plugin install failed or skipped: $name" }
 }
