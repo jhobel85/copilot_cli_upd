@@ -17,9 +17,6 @@ For each task: (1) input facts → (2) logical deductions → (3) uncertainties 
 | Critic | Detect errors, risks, inconsistencies |
 | Safety | Enforce constraints, block unsafe actions |
 
-## Verification Pipeline
-Executor → Critic → Safety → Planner. Restart from failed stage if any check fails.
-
 ## Skills
 > **Prefer a skill over doing it manually** — invoke by name in your prompt.
 
@@ -30,7 +27,7 @@ Executor → Critic → Safety → Planner. Restart from failed stage if any che
 | `create-copilot-plugin` | Creating a new Copilot CLI plugin |
 
 ## Memory Graph (MCP `memory`)
-- **Write:** orchestrator only — `create_entities`, `create_relations`, `add_observations`, `delete_*`.
+- **Write:** orchestrator only (session running `orchestrator-manager` skill) — `create_entities`, `create_relations`, `add_observations`, `delete_*`.
 - **Read:** any agent — `search_nodes` / `open_nodes` only. Never `read_graph()` mid-session.
 - Fleet agents → write to `~/.copilot/session-state/<id>/` only, never touch memory or repo. Orchestrator consolidates after.
 
@@ -46,8 +43,8 @@ Executor → Critic → Safety → Planner. Restart from failed stage if any che
 | 3–4 | parallel tool calls / `dispatching-parallel-agents` |
 | Trivial | never fleet |
 
-- Each agent: write findings file + status summary; mark `timed-out` if blocked >**180s**.
-- Fleet agents **MUST NOT** write memory. Orchestrator prefixes output `[Agent N]`.
+- Each agent: write findings file + status summary; mark `timed-out` if blocked >**180s** then continue with available data.
+- Fleet agents **MUST NOT** write memory, commit, push, create PRs, or delete files. Orchestrator prefixes output `[Agent N]`.
 - Use `haiku` for search/grep/explore agents.
 
 ## Iterative Convergence (review / debug / investigation tasks)
