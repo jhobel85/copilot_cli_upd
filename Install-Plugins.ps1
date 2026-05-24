@@ -11,6 +11,10 @@
       'copilot plugin install' for each plugin directory. Requires the
       changes to already be pushed to GitHub.
 
+      Before each install, any existing version of the plugin is uninstalled
+      so the install is always clean. The superpowers marketplace plugin is
+      also installed by default (disable with -NoSuperpowers).
+
     LOCAL (-Local flag):
       Generates a copilot-dev.ps1 wrapper script in the repo root that
       starts the Copilot CLI with --plugin-dir for every local plugin
@@ -24,12 +28,18 @@
 .PARAMETER Local
     Generate the copilot-dev.ps1 wrapper for local dev sessions.
 
+.PARAMETER NoSuperpowers
+    Skip installing the superpowers marketplace plugin.
+
 .EXAMPLE
     # Install all plugins from GitHub (after pushing)
     .\Install-Plugins.ps1
 
     # Install a single plugin from GitHub
     .\Install-Plugins.ps1 -Plugin dotnet
+
+    # Install without the superpowers marketplace plugin
+    .\Install-Plugins.ps1 -NoSuperpowers
 
     # Generate local dev wrapper for all plugins
     .\Install-Plugins.ps1 -Local
@@ -40,7 +50,8 @@
 
 param(
     [string]$Plugin,
-    [switch]$Local
+    [switch]$Local,
+    [switch]$NoSuperpowers
 )
 
 Set-StrictMode -Version Latest
@@ -88,6 +99,7 @@ copilot $pluginArgs @args
 }
 
 # ── GITHUB MODE ───────────────────────────────────────────────────────────────
+# Resolves the GitHub owner/repo from origin remote and runs copilot plugin install.
 function Get-GithubRepo {
     $url = git remote get-url origin 2>&1
     if ($LASTEXITCODE -ne 0) { throw "No git remote 'origin' found. Are you inside a cloned git repository?" }
@@ -95,8 +107,36 @@ function Get-GithubRepo {
     throw "Could not parse a GitHub owner/repo from remote URL: $url"
 }
 
-$repo = Get-GithubRepo
-$installed = 0
+# Returns the set of currently installed plugin names (the part before @ or space).
+function Get-InstalledPluginNames {
+    $output = copilot plugin list 2>&1
+    $names = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($line in $output) {
+        # Matches lines like: "  • plugin-name@source (v1.0.0)" or "  • plugin-name (v1.0.0)"
+        if ($line -match '•\s+([^@\s(]+)') {
+            [void]$names.Add($Matches[1])
+        }
+    }
+    return $names
+}
+
+function Invoke-PluginReinstall {
+    param(
+        [string]$Name,
+        [string]$Ref,
+        [System.Collections.Generic.HashSet[string]]$Installed
+    )
+    if ($Installed.Contains($Name)) {
+        Write-Host "  Uninstalling existing '$Name' ..." -ForegroundColor Yellow
+        copilot plugin uninstall $Name
+    }
+    Write-Host "Installing $Ref ..." -ForegroundColor Cyan
+    copilot plugin install $Ref
+}
+
+$repo     = Get-GithubRepo
+$installed = Get-InstalledPluginNames
+$count    = 0
 
 foreach ($dir in $pluginDirs) {
     $name = Split-Path $dir -Leaf
@@ -107,44 +147,16 @@ foreach ($dir in $pluginDirs) {
         continue
     }
 
-    $ref = "${repo}:plugins/${name}"
-    Write-Host "Installing $ref ..." -ForegroundColor Cyan
-    copilot plugin install $ref
-    $installed++
+    Invoke-PluginReinstall -Name $name -Ref "${repo}:plugins/${name}" -Installed $installed
+    $count++
+}
+
+# ── SUPERPOWERS MARKETPLACE ───────────────────────────────────────────────────
+if (-not $NoSuperpowers) {
+    Invoke-PluginReinstall -Name 'superpowers' -Ref 'obra/superpowers-marketplace' -Installed $installed
+    $count++
 }
 
 Write-Host ""
-Write-Host "$installed plugin(s) installed from $repo." -ForegroundColor Green
+Write-Host "$count plugin(s) installed." -ForegroundColor Green
 
-# ── GITHUB MODE ───────────────────────────────────────────────────────────────
-# Resolves the GitHub owner/repo from origin remote and runs copilot plugin install.
-function Get-GithubRepo {
-    $url = git remote get-url origin 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "No git remote 'origin' found. Are you inside a cloned git repository?" }
-
-    if ($url -match 'github\.com[:/](.+?)(?:\.git)?$') {
-        return $Matches[1]
-    }
-    throw "Could not parse a GitHub owner/repo from remote URL: $url"
-}
-
-$repo = Get-GithubRepo
-$installed = 0
-
-foreach ($dir in $pluginDirs) {
-    $name = Split-Path $dir -Leaf
-    $pluginJsonPath = Join-Path $dir '.github\plugin\plugin.json'
-
-    if (-not (Test-Path $pluginJsonPath)) {
-        Write-Warning "Skipping '$name' — no .github/plugin/plugin.json found."
-        continue
-    }
-
-    $ref = "${repo}:plugins/${name}"
-    Write-Host "Installing $ref ..." -ForegroundColor Cyan
-    copilot plugin install $ref
-    $installed++
-}
-
-Write-Host ""
-Write-Host "$installed plugin(s) installed from $repo." -ForegroundColor Green

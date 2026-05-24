@@ -1,13 +1,14 @@
 {
   "name": "custom-general-plugin",
-  "description": "Custom workflow management skills: orchestration, plugin creation, and superpowers safety checks.",
+  "description": "Custom workflow management skills: project environment bootstrapping, orchestration, system audit, and plugin creation.",
   "version": "1.0.0",
   "author": { "name": "jhobel85" },
   "repository": "https://github.com/jhobel85/copilot_cli_upd",
   "license": "MIT",
-  "keywords": ["orchestration", "plugins", "safety", "workflow"],
+  "keywords": ["orchestration", "plugins", "bootstrap", "workflow", "audit"],
   "skills": [
     "./skills/orchestrator-manager",
-    "./skills/create-copilot-plugin"
+    "./skills/create-copilot-plugin",
+    "./skills/system-audit"
   ]
 }

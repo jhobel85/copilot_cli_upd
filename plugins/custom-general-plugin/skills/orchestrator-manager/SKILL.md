@@ -14,7 +14,7 @@ Purpose:
 
 ### 1. Task Decomposition
 - Analyze the user request and break it into independent or sequenced subtasks.
-- Assign each subtask to an appropriate subagent (brainstorming, writing-plans, executing-plans, code-review, etc.).
+- Assign each subtask to an appropriate subagent (design, planning, implementation, code-review, etc.). Available skills depend on installed plugins — use `copilot skill list` to see what's active.
 - Set scope boundaries: what each subagent can read/write, what requires approval.
 
 ### 2. Subagent Spawning & Monitoring
@@ -83,9 +83,9 @@ Purpose:
 **User Request:** "Add user authentication to the API"
 
 **Decomposition:**
-- Task 1: Design auth architecture (brainstorming SKILL)
-- Task 2: Write implementation plan (writing-plans SKILL)
-- Task 3: Implement code changes (executing-plans SKILL)
+- Task 1: Design auth architecture (design/brainstorming skill, if installed)
+- Task 2: Write implementation plan (writing-plans skill, if installed)
+- Task 3: Implement code changes (executing-plans skill, if installed)
 - Task 4: Review code (code-review SKILL)
 - Task 5: Run tests and commit (manager gate + git hooks)
 

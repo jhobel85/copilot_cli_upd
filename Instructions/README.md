@@ -30,6 +30,17 @@ Copy-Item Instructions\AGENTS.md AGENTS.md
 # or: merge MCP/mcp-config.json into ~/.copilot/mcp.json
 ```
 
+## Skills Prerequisites
+
+The skills referenced in `copilot-instructions.*.md` are provided by installed plugins:
+
+| Plugin | How to install | Skills provided |
+|---|---|---|
+| `awesome-general-plugin` | `.\Install-Plugins.ps1 -Plugin awesome-general-plugin` | `acquire-codebase-knowledge`, `cli-mastery`, `microsoft-docs`, `add-educational-comments`, `breakdown-feature-implementation`, `create-implementation-plan`, `update-implementation-plan`, `create-github-issues-feature-from-implementation-plan`, `drawio`, `security-best-practices`, `ai-prompt-engineering-safety-review`, `mentoring-juniors`, `copilot-usage-metrics` |
+| `custom-general-plugin` | `.\Install-Plugins.ps1 -Plugin custom-general-plugin` | `brainstorming`, `writing-plans`, `executing-plans`, `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `finishing-a-development-branch`, `receiving-code-review`, `orchestrator-manager`, `system-audit`, `create-copilot-plugin` |
+
+Install the plugins before copying an instruction file to a project — skills listed in the file must be resolvable for the agent to invoke them.
+
 ## User-Space Setup (global fallback)
 
 | What | Location |
