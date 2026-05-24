@@ -16,6 +16,7 @@
 
 ## Skills
 > **Prefer a skill over doing it manually** — invoke by name in your prompt.
+> Skills are provided by installed plugins. The table below assumes `awesome-general-plugin` is installed (provides most entries). Install via `.\Install-Plugins.ps1 -Plugin awesome-general-plugin`.
 
 | Skill | When |
 |---|---|
