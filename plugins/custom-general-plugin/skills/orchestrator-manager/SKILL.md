@@ -23,10 +23,9 @@ Purpose:
 - Collect outputs: logs, diffs, test results, decisions.
 
 ### 3. Safety Checks (Integrated)
-- Before proposing any commit/push action, ALWAYS invoke the `superpowers-safety` SKILL.
-- Parse the report: pass/fail on forbidden phrases, remediation suggestions.
-- If safety check fails: surface findings to user, offer remediation options, do NOT proceed to approval gate.
-- If safety check passes: continue to approval gate and present to user.
+- Commit safety is enforced by git hooks — no manual skill invocation required.
+- If a hook blocks a commit: surface the finding to the user, offer remediation, do NOT proceed to approval gate.
+- If hooks pass: continue to approval gate and present to user.
 
 ### 4. Aggregation & Decision
 - Synthesize results from all subagents into a single, human-readable summary.
@@ -72,7 +71,7 @@ Purpose:
    - Await results
 3. COLLECT: Gather all outputs
 4. VALIDATE: Check consistency, coverage, no conflicts
-5. SAFETY: Invoke superpowers-safety; block if forbidden phrases found
+5. SAFETY: Git hooks enforce commit safety automatically
 6. AGGREGATE: Synthesize into human-readable summary + diffs
 7. GATE: Present to user with approval token request
 8. APPROVED: Present the exact commands for the user to execute (commit, push, PR)
@@ -88,19 +87,18 @@ Purpose:
 - Task 2: Write implementation plan (writing-plans SKILL)
 - Task 3: Implement code changes (executing-plans SKILL)
 - Task 4: Review code (code-review SKILL)
-- Task 5: Run tests and commit (manager gate + safety check)
+- Task 5: Run tests and commit (manager gate + git hooks)
 
 **For each task:**
 1. Manager spawns subagent with scoped prompt
 2. Subagent returns design doc, plan, code, or review
 3. Manager collects and validates
-4. At commit step: run superpowers-safety, ask user for approval token
+4. At commit step: git hooks run automatically, ask user for approval token
 
 **User Approval:**
 ```
 Manager: Ready to commit. Files: src/auth.ts, tests/auth.test.ts. 
-No forbidden phrases detected (safety check passed).
-Approve? Respond with: APPROVE_COMMIT:abc123
+Git hooks passed. Approve? Respond with: APPROVE_COMMIT:abc123
 ```
 
 **User:** `APPROVE_COMMIT:abc123`

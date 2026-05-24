@@ -15,7 +15,6 @@ Custom workflow management skills: orchestration, plugin creation, and commit sa
 |-------|---------|-------------|
 | `orchestrator-manager` | Managing complex multi-step tasks | Decomposes tasks into subagents, enforces safety, gates human approvals |
 | `create-copilot-plugin` | Creating a new Copilot CLI plugin | Gap analysis → plugin.json → skills → install → verify |
-| `superpowers-safety` | Before committing skill/agent changes | Scans skill files for forbidden auto-commit phrases |
 
-Skills are committed directly to this repo. `superpowers-safety` is also stored at user level (`~/.copilot/skills/`) and is not duplicated here.
+Skills are committed directly to this repo.
 

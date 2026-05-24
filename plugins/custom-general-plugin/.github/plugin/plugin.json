@@ -8,7 +8,6 @@
   "keywords": ["orchestration", "plugins", "safety", "workflow"],
   "skills": [
     "./skills/orchestrator-manager",
-    "./skills/create-copilot-plugin",
-    "./skills/superpowers-safety"
+    "./skills/create-copilot-plugin"
   ]
 }

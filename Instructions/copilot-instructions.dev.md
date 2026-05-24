@@ -1,8 +1,3 @@
-<!-- ============================================================
-     GENERATED FILE — do not edit directly.
-     Source layers: layer.meta + layer.dev
-     Regenerate:    Instructions\build-instructions.ps1
-     ============================================================ -->
 # Meta Instructions
 
 ## Git & Commit Rules
@@ -14,11 +9,57 @@
 **Always ask:** create/modify repo files · push/merge/rebase · create/close PRs · delete files or branches.
 **Safe to decide:** read/explore · run existing tests/builds · generate reports · session artifacts in `~/.copilot/session-state/`.
 
+## Skills
+
+> **Always prefer a skill over doing it manually.** Before implementing, check if a skill covers the task — invoke it by name in your prompt.
+
+| Skill | When |
+|---|---|
+| `brainstorming` | New feature / design — before any code |
+| `acquire-codebase-knowledge` | Map, document, or onboard into a codebase |
+| `cli-mastery` | CLI guidance and shell workflows |
+| `microsoft-docs` | Official Microsoft / Azure documentation |
+
 ## Memory (Cross-Session)
-A knowledge-graph MCP (`memory`) provides persistent context. Read freely. Write restricted to orchestrator — see agentic layer.
+A knowledge-graph MCP (`memory`) provides persistent context. Read freely. Write restricted to orchestrator — full rules in `AGENTS.md`.
+
 
 
 # Development Layer
+
+## Skills
+
+### Workflow
+
+| Skill | When |
+|---|---|
+| `writing-plans` | Plan the implementation |
+| `executing-plans` | Execute an existing plan |
+| `test-driven-development` | Any non-trivial implementation |
+| `systematic-debugging` | Failure or repeated error |
+| `verification-before-completion` | Before claiming done |
+| `finishing-a-development-branch` | Branch ready to merge |
+| `receiving-code-review` | Processing review feedback |
+
+### Planning & Documentation
+
+| Skill | When |
+|---|---|
+| `breakdown-feature-implementation` | Break a feature into implementation tasks |
+| `create-implementation-plan` | Write a new implementation plan |
+| `update-implementation-plan` | Revise an existing plan |
+| `create-github-issues-feature-from-implementation-plan` | Create GitHub Issues from a plan |
+| `add-educational-comments` | Add educational comments to files |
+| `drawio` | Generate diagrams (PNG / SVG / PDF) |
+
+### Review & Quality
+
+| Skill | When |
+|---|---|
+| `security-best-practices` | Secrets, auth, encryption, secure defaults |
+| `ai-prompt-engineering-safety-review` | Safety review for AI prompts |
+| `mentoring-juniors` | Code-review checklists for junior devs |
+| `copilot-usage-metrics` | Retrieve Copilot usage metrics |
 
 ## TDD — MANDATORY
 Write tests **before** implementation for all behavioral/functional changes (features, bugfixes, refactors, API changes). Failing test → implement → confirm pass. Exceptions: config-only, renames, docs, one-off scripts. No test framework yet → scaffold it first.
@@ -32,19 +73,6 @@ Before creating any file, read `.github/copilot-instructions.md`. Checklist: (1)
 ## 🦆 Rubber Duck — auto-trigger when:
 ≥3 files changed · architectural decisions · spec-driven · >50 lines new logic · same error repeats 2×
 Skip: single-file fixes, renames, config, docs. Also use after major feature chunk.
-
-## Superpowers Skills
-
-| When | Skill |
-|---|---|
-| New feature/design | `brainstorming` |
-| Plan ready | `writing-plans` → `executing-plans` |
-| Non-trivial impl | `test-driven-development` |
-| Failure / repeat error | `systematic-debugging` |
-| Claiming done | `verification-before-completion` |
-| Branch complete | `finishing-a-development-branch` |
-| Review feedback | `receiving-code-review` |
-| ≥2 independent tasks | `dispatching-parallel-agents` |
 
 ## Code Quality
 - Specify language in every code block. On bugfix check same code path for related bugs.

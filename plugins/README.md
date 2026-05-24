@@ -20,7 +20,7 @@ Bash: same flags with `./install-plugins.sh [--local] [<name>]` → generates `c
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | [awesome-general-plugin](awesome-general-plugin/README.md) | Downloaded live from `github/awesome-copilot` | General-purpose skills |
-| [custom-general-plugin](custom-general-plugin/README.md) | `orchestrator-manager`, `create-copilot-plugin`, `superpowers-safety` | Workflow management |
+| [custom-general-plugin](custom-general-plugin/README.md) | `orchestrator-manager`, `create-copilot-plugin` | Workflow management |
 | [dotnet](dotnet/README.md) | `dotnet-best-practices`, `dotnet-design-pattern-review` | .NET/C# code quality |
 
 ## Plugin Management

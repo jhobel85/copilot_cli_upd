@@ -1,8 +1,3 @@
-<!-- ============================================================
-     GENERATED FILE — do not edit directly.
-     Source layers: layer.meta
-     Regenerate:    Instructions\build-instructions.ps1
-     ============================================================ -->
 # Meta Instructions
 
 ## Git & Commit Rules
@@ -14,7 +9,16 @@
 **Always ask:** create/modify repo files · push/merge/rebase · create/close PRs · delete files or branches.
 **Safe to decide:** read/explore · run existing tests/builds · generate reports · session artifacts in `~/.copilot/session-state/`.
 
+## Skills
+
+> **Always prefer a skill over doing it manually.** Before implementing, check if a skill covers the task — invoke it by name in your prompt.
+
+| Skill | When |
+|---|---|
+| `brainstorming` | New feature / design — before any code |
+| `acquire-codebase-knowledge` | Map, document, or onboard into a codebase |
+| `cli-mastery` | CLI guidance and shell workflows |
+| `microsoft-docs` | Official Microsoft / Azure documentation |
+
 ## Memory (Cross-Session)
-A knowledge-graph MCP (`memory`) provides persistent context. Read freely. Write restricted to orchestrator — see agentic layer.
-
-
+A knowledge-graph MCP (`memory`) provides persistent context. Read freely. Write restricted to orchestrator — full rules in `AGENTS.md`.

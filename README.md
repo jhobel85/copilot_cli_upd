@@ -5,7 +5,7 @@ GitHub Copilot CLI configuration — reusable plugins, layered instructions, git
 ## Layout
 
 ```
-Instructions/   ← Layered copilot-instructions (meta / dev / agentic)
+Instructions/   ← Copilot instructions (meta / dev / AGENTS.md)
 MCP/            ← MCP server configuration
 Scripts/        ← Standalone utility scripts
 git-hooks/      ← AI commit guard
