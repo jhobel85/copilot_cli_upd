@@ -27,28 +27,19 @@ system-summary
 9. Run: environment info
 
 ### Transformations
-- Extract and count:
-  - Plugin Skills
-  - User Skills
-  - Project Skills
-  - Agents
+- Extract and count only the following fields:
   - Instructions
-  - Tools
-- Extract general environment information:
-  - Copilot CLI version
-  - OS and architecture
-  - Shell
-  - Skills directory path
-  - Loaded plugins
-  - Available models
-  - Active configuration values
-- Produce a structured summary with sections:
-  - Overview Table (Category / Count)
-  - Environment Info
-  - Paths
   - Plugins
-  - Models
+  - MCP
+  - Copilot CLI version
+- Produce a minimal Overview section containing these fields in plain text (one field per line).
 
 ### Output
-Return only the final structured summary.
-Do not add explanations or commentary.
+Return only the Overview section in plain text, with lines in this order:
+Copilot CLI version: <version>
+Skills: <number>
+Instructions: <number>
+Agents: <number>
+Plugins: <number>
+MCP: <number>
+Do not include any other sections, commentary, or additional formatting.
