@@ -2,48 +2,61 @@
 #
 # git-autocommit-block — global pre-commit guard
 #
-# Blocks all git commits unless the human explicitly sets GIT_HUMAN_APPROVED=1.
-# Prevents AI tools (GitHub Copilot, autopilot agents, scripts) from committing
-# without explicit human approval.
+# Blocks all git commits unless the human sets GIT_HUMAN_APPROVED to a Unix
+# timestamp (seconds since epoch) issued within the last 60 seconds.
+# A static value like "1" or any old timestamp is rejected — the approval
+# must be fresh and intentional, preventing persistent env var bypasses.
 #
 # Installed globally via: git config --global core.hooksPath ~/.config/git/hooks
-# Source file tracked at:  Scripts/git-hooks/git-autocommit-block  (in any repo)
+# Source file tracked at:  git-hooks/git-autocommit-block  (in any repo)
 #
 # HOW TO COMMIT (as a human):
 #   PowerShell:
-#     $env:GIT_HUMAN_APPROVED=1; git commit -m "your message"
-#   Git Bash / WSL:
-#     GIT_HUMAN_APPROVED=1 git commit -m "your message"
+#     $env:GIT_HUMAN_APPROVED = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+#     git commit -m "your message"
+#     $env:GIT_HUMAN_APPROVED = $null   # clear after use
 #
-# BYPASS (use sparingly):
+#   Git Bash / WSL:
+#     GIT_HUMAN_APPROVED=$(date +%s) git commit -m "your message"
+#
+# BYPASS (use sparingly — leave audit trail in commit message):
 #   git commit --no-verify -m "your message"
 #
 
-if [ "$GIT_HUMAN_APPROVED" != "1" ] && [ -z "$VSCODE_GIT_IPC_HANDLE" ] && [ -z "$VSCODE_GIT_ASKPASS_NODE" ]; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║  ⛔  COMMIT BLOCKED — HUMAN APPROVAL REQUIRED  ⛔        ║"
-  echo "╠══════════════════════════════════════════════════════════╣"
-  echo "║                                                          ║"
-  echo "║  [git-autocommit-block] is active on this machine.      ║"
-  echo "║  AI tools, autopilot agents and scripts are BLOCKED.    ║"
-  echo "║                                                          ║"
-  echo "║  TO COMMIT AS A HUMAN:                                   ║"
-  echo "║                                                          ║"
-  echo "║  PowerShell:                                             ║"
-  echo "║    \$env:GIT_HUMAN_APPROVED=1                            ║"
-  echo "║    git commit -m \"your message\"                          ║"
-  echo "║                                                          ║"
-  echo "║  Git Bash / WSL:                                         ║"
-  echo "║    GIT_HUMAN_APPROVED=1 git commit -m \"your message\"     ║"
-  echo "║                                                          ║"
-  echo "║  BYPASS (careful):                                       ║"
-  echo "║    git commit --no-verify -m \"your message\"              ║"
-  echo "║                                                          ║"
-  echo "╚══════════════════════════════════════════════════════════╝"
-  echo ""
-  exit 1
+APPROVED="$GIT_HUMAN_APPROVED"
+
+# Require a fresh timestamp (within 60 seconds)
+if echo "$APPROVED" | grep -qE '^[0-9]{10}$'; then
+  NOW=$(date +%s)
+  AGE=$((NOW - APPROVED))
+  if [ "$AGE" -ge 0 ] && [ "$AGE" -le 60 ]; then
+    echo "✅ Human approval confirmed (timestamp ${APPROVED}, age ${AGE}s). Proceeding."
+    exit 0
+  fi
 fi
 
-echo "✅ Human approval confirmed (GIT_HUMAN_APPROVED=1). Proceeding."
-exit 0
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  ⛔  COMMIT BLOCKED — HUMAN APPROVAL REQUIRED  ⛔            ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║                                                              ║"
+echo "║  [git-autocommit-block] requires a FRESH timestamp.         ║"
+echo "║  Static values (e.g. =1) or old timestamps are rejected.   ║"
+echo "║                                                              ║"
+echo "║  TO COMMIT AS A HUMAN:                                       ║"
+echo "║                                                              ║"
+echo "║  PowerShell:                                                 ║"
+echo "║    \$env:GIT_HUMAN_APPROVED = [DateTimeOffset]::             ║"
+echo "║        UtcNow.ToUnixTimeSeconds()                           ║"
+echo "║    git commit -m \"your message\"                              ║"
+echo "║    \$env:GIT_HUMAN_APPROVED = \$null  # clear after use       ║"
+echo "║                                                              ║"
+echo "║  Git Bash / WSL:                                             ║"
+echo "║    GIT_HUMAN_APPROVED=\$(date +%s) git commit -m \"msg\"       ║"
+echo "║                                                              ║"
+echo "║  BYPASS (careful):                                           ║"
+echo "║    git commit --no-verify -m \"your message\"                  ║"
+echo "║                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+exit 1
