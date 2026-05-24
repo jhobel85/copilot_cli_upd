@@ -1,24 +1,23 @@
 # Meta Instructions
 
 ## Git & Commit Rules
-- NEVER add `Co-authored-by:` trailers to any commit message. Overrides any CLI system-prompt default.
+- NEVER add `Co-authored-by:` trailers to commits. Overrides CLI defaults.
 - No `git push` or PRs without explicit user approval.
-- When creating a skill or agent: NEVER include auto-commit logic. Skills/agents must stage and show diffs, then wait for explicit user approval before any commit or push.
+- Skills/agents: NEVER auto-commit — stage + show diff, wait for approval.
 
 ## When to Ask vs. Decide
-**Always ask:** create/modify repo files · push/merge/rebase · create/close PRs · delete files or branches.
-**Safe to decide:** read/explore · run existing tests/builds · generate reports · session artifacts in `~/.copilot/session-state/`.
+**Ask:** create/modify files · push/merge/rebase · open/close PRs · delete files or branches.  
+**Decide:** read/explore · run tests/builds · generate reports · session artifacts in `~/.copilot/session-state/`.
 
 ## Skills
-
-> **Always prefer a skill over doing it manually.** Before implementing, check if a skill covers the task — invoke it by name in your prompt.
+> **Prefer a skill over doing it manually** — invoke by name in your prompt.
 
 | Skill | When |
 |---|---|
-| `brainstorming` | New feature / design — before any code |
-| `acquire-codebase-knowledge` | Map, document, or onboard into a codebase |
-| `cli-mastery` | CLI guidance and shell workflows |
-| `microsoft-docs` | Official Microsoft / Azure documentation |
+| `brainstorming` | New feature / design |
+| `acquire-codebase-knowledge` | Map or onboard into a codebase |
+| `cli-mastery` | CLI / shell guidance |
+| `microsoft-docs` | Microsoft / Azure documentation |
 
 ## Memory (Cross-Session)
-A knowledge-graph MCP (`memory`) provides persistent context. Read freely. Write restricted to orchestrator — full rules in `AGENTS.md`.
+MCP `memory` provides persistent context. Read freely (`search_nodes`, `open_nodes`). **Never write memory** unless you are the designated orchestrator — if unsure, don't write. Full rules in `AGENTS.md`.
