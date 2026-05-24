@@ -179,6 +179,97 @@ function Test-RemotePluginJson {
     return $false
 }
 
+function Get-RemoteFileContent {
+    param([string]$Owner,[string]$Repo,[string]$Branch,[string]$Path)
+    $url = "https://raw.githubusercontent.com/$Owner/$Repo/$Branch/$Path"
+    try {
+        $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+        if ($resp.StatusCode -eq 200) { return $resp.Content }
+    } catch {
+        # ignore and return null
+    }
+    return $null
+}
+
+function Find-RemoteSkillPath {
+    param([string]$Owner,[string]$Repo,[string]$SkillName)
+    try {
+        $query = "repo:$Owner/$Repo filename:SKILL.md $SkillName"
+        $uri = "https://api.github.com/search/code?q=$([System.Uri]::EscapeDataString($query))"
+        $headers = @{ 'User-Agent' = 'copilot-cli' }
+        $resp = Invoke-RestMethod -Uri $uri -Headers $headers -ErrorAction Stop
+        if ($resp.total_count -gt 0) { return $resp.items[0].path }
+    } catch {
+        # ignore
+    }
+    return $null
+}
+
+function Populate-LocalSkillsFromRepo {
+    param([string]$LocalPluginDir,[string]$Owner,[string]$Repo)
+
+    $pluginJsonPath = Join-Path $LocalPluginDir '.github\plugin\plugin.json'
+    if (-not (Test-Path $pluginJsonPath)) { return }
+    try {
+        $pj = Get-Content $pluginJsonPath -Raw | ConvertFrom-Json
+    } catch {
+        return
+    }
+
+    $localPluginName = Split-Path $LocalPluginDir -Leaf
+    foreach ($skillRel in $pj.skills) {
+        $skillName = Split-Path $skillRel -Leaf
+        $skillsDir = Join-Path $LocalPluginDir 'skills'
+        if (-not (Test-Path $skillsDir)) { New-Item -ItemType Directory -Path $skillsDir | Out-Null }
+        $skillDir = Join-Path $skillsDir $skillName
+        $skillFile = Join-Path $skillDir 'SKILL.md'
+        if (Test-Path $skillFile) { continue }
+
+        $content = $null
+
+        # Candidate raw paths to try (in order). Many upstream repos place skills at 'skills/...'
+        $candidatePaths = @(
+            "skills/$skillName/SKILL.md",
+            "$skillName/SKILL.md",
+            "plugins/$localPluginName/skills/$skillName/SKILL.md",
+            ".github/plugins/$localPluginName/skills/$skillName/SKILL.md"
+        )
+
+        # Special-case: some upstream plugins place skills under plugins/<plugin>/skills/<different-name>/SKILL.md
+        # If an exact path is known across the repo, try it (user-provided mapping).
+        if ($skillName -ieq 'security-best-practices') {
+            $candidatePaths += 'plugins/security-best-practices/skills/ai-prompt-engineering-safety-review/SKILL.md'
+        }
+
+        foreach ($branch in @('main','master')) {
+            foreach ($path in $candidatePaths) {
+                $content = Get-RemoteFileContent -Owner $Owner -Repo $Repo -Branch $branch -Path $path
+                if ($content) { break }
+            }
+            if ($content) { break }
+        }
+
+        # If not found via candidate paths, use code-search fallback to locate SKILL.md path
+        if (-not $content) {
+            $found = Find-RemoteSkillPath -Owner $Owner -Repo $Repo -SkillName $skillName
+            if ($found) {
+                foreach ($branch in @('main','master')) {
+                    $content = Get-RemoteFileContent -Owner $Owner -Repo $Repo -Branch $branch -Path $found
+                    if ($content) { break }
+                }
+            }
+        }
+
+        if ($content) {
+            New-Item -ItemType Directory -Path $skillDir -Force | Out-Null
+            $content | Set-Content -Path $skillFile -Encoding UTF8
+            Write-Host "Fetched skill '$skillName' into $skillFile" -ForegroundColor Green
+        } else {
+            throw "Missing remote SKILL.md for '$skillName' in $Owner/$Repo. Install aborted — upstream repository does not contain the required skill file."
+        }
+    }
+}
+
 function Invoke-PluginReinstall {
     param(
         [string]$Name,
@@ -255,6 +346,25 @@ foreach ($dir in $pluginDirs) {
 
     if (-not (Test-Path $pluginJsonPath)) {
         Write-Warning "Skipping '$name' — no .github/plugin/plugin.json found."
+        continue
+    }
+
+    # If the local plugin lacks a skills directory, attempt to populate it from the repository
+    try {
+        $pj = Get-Content $pluginJsonPath -Raw | ConvertFrom-Json
+        if ($pj.repository -and ($pj.repository -is [string])) {
+            if ($pj.repository -match 'github\.com[:/](.+?)(?:\.git)?$') {
+                $ownerRepo = $Matches[1]
+                $parts = $ownerRepo.Split('/')
+                if ($parts.Count -ge 2) {
+                    $owner = $parts[0]; $repoName = $parts[1]
+                    Populate-LocalSkillsFromRepo -LocalPluginDir $dir -Owner $owner -Repo $repoName
+                }
+            }
+        }
+    } catch {
+        Write-Error "Remote skill fetch failed for plugin '$name': $($_.Exception.Message)"
+        Write-Host "Skipping installation of '$name' due to missing upstream skills." -ForegroundColor Yellow
         continue
     }
 
