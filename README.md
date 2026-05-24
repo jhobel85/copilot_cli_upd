@@ -42,6 +42,7 @@ Copy-Item Instructions\copilot-instructions.dev.md .github\copilot-instructions.
 | `git-hooks/` | AI commit guard | [README](git-hooks/README.md) |
 | `plugins/` | Copilot CLI plugins | [README](plugins/README.md) |
 
-## How to install superpowers - teminal commands (1. can be skipped if already once done)
-1. copilot plugin marketplace add obra/superpowers-marketplace
-2. copilot plugin install superpowers@superpowers-marketplace 
+## How to install Superpowers (terminal)
+
+1. copilot plugin marketplace add obra/superpowers-marketplace  # Skip this step if the marketplace is already added
+2. copilot plugin install superpowers@superpowers-marketplace
