@@ -10,7 +10,11 @@ Copilot CLI plugins bundle skills under a single installable name.
 # then: .\copilot-dev.ps1 instead of copilot
 
 # From GitHub — auto-detects repo from git remote origin
-.\Install-Plugins.ps1 [-Plugin <name>]
+.\Install-Plugins.ps1 [-Plugin <name>]            # dotnet is opt-in; use -Dotnet to include it
+
+# Marketplace installs (recommended for some plugins):
+# Use marketplace specifier to install 'superpowers' reliably:
+# copilot plugin install superpowers@superpowers-marketplace
 ```
 
 Bash: same flags with `./install-plugins.sh [--local] [<name>]` → generates `copilot-dev.sh`
@@ -40,6 +44,8 @@ plugins/<name>/
   skills/<skill-name>/SKILL.md
   hooks/                       ← optional SessionStart hooks
 ```
+
+Note: `plugin.json` must include `name`, `description`, `author`, and `repository`. If a repository-based install fails due to missing plugin.json, prefer the marketplace specifier (if available) such as `superpowers@superpowers-marketplace`.
 
 ### Required fields in `plugin.json`
 

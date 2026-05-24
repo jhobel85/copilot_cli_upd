@@ -1,6 +1,7 @@
 ---
 name: system-audit
-description: 'Perform a deep, high-accuracy audit of the Copilot CLI environment: skills, plugins, MCP servers, agents, and instructions.'
+description: 'Perform a deep, high-accuracy audit of the Copilot CLI environment:
+  skills, plugins, MCP servers, agents, and instructions.'
 ---
 
 # SYSTEM-AUDIT (High-Fidelity + Usage Analysis)

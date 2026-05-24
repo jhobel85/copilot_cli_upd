@@ -1,6 +1,7 @@
 ---
 name: orchestrator-manager
-description: 'Use when managing complex multi-step tasks via subagent delegation, safety checks, and human approval gates.'
+description: 'Use when managing complex multi-step tasks via subagent delegation,
+  safety checks, and human approval gates.'
 ---
 
 # Orchestrator-Manager Skill

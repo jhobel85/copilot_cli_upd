@@ -18,3 +18,5 @@ Custom workflow management skills: orchestration, plugin creation, and commit sa
 
 Skills are committed directly to this repo.
 
+Note: Installing the custom-general-plugin from this repository will install the included skills (e.g., system-summary) automatically — no additional flags required.
+

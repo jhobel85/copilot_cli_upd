@@ -1,6 +1,9 @@
 ---
 name: create-copilot-plugin
-description: Use when bootstrapping or extending a Copilot CLI project environment — creates plugins with custom skills, generates tailored AGENTS.md and instruction files, configures MCP servers based on tech stack, installs git hooks, and validates everything is consistent with no duplicates.
+description: Use when bootstrapping or extending a Copilot CLI project 
+  environment — creates plugins with custom skills, generates tailored AGENTS.md
+  and instruction files, configures MCP servers based on tech stack, installs 
+  git hooks, and validates everything is consistent with no duplicates.
 ---
 
 # Bootstrap Copilot Environment for a Project

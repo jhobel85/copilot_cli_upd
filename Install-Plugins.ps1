@@ -12,8 +12,10 @@
       changes to already be pushed to GitHub.
 
       Before each install, any existing version of the plugin is uninstalled
-      so the install is always clean. The superpowers marketplace plugin is
-      also installed by default (disable with -NoSuperpowers).
+      so the install is always clean. Superpowers is installed using the marketplace
+      specifier (superpowers@superpowers-marketplace) to avoid repository plugin.json
+      issues. Superpowers is installed by default unless -NoSuperpowers is provided.
+      Dotnet is opt-in (use -Dotnet) to avoid installing large toolchains by default.
 
     UNINSTALL ALL (-UninstallAll flag):
       Uninstalls all currently installed Copilot CLI plugins. By default
@@ -27,7 +29,6 @@
 
 .PARAMETER Plugin
     Optional. Process only the named plugin instead of all plugins.
-    Example: .\Install-Plugins.ps1 -Plugin dotnet
 
 .PARAMETER Local
     Generate the copilot-dev.ps1 wrapper for local dev sessions.
@@ -39,20 +40,29 @@
     Uninstall all currently installed plugins instead of installing.
 
 .EXAMPLE
+    # Install all plugins from GitHub (after pushing), dotnet not included by default
+    .\Install-Plugins.ps1
+
+    # Install all plugins including dotnet
+    .\Install-Plugins.ps1 -Dotnet
+
+    # Install a single plugin from GitHub
+    .\Install-Plugins.ps1 -Plugin custom-general-plugin
+
     # Install all plugins from GitHub (after pushing)
     .\Install-Plugins.ps1
 
     # Install a single plugin from GitHub
-    .\Install-Plugins.ps1 -Plugin dotnet
 
     # Install without the superpowers marketplace plugin
     .\Install-Plugins.ps1 -NoSuperpowers
 
+    # Install including dotnet (opt-in — not installed by default)
+        .\Install-Plugins.ps1 -Dotnet
+
     # Generate local dev wrapper for all plugins
     .\Install-Plugins.ps1 -Local
 
-    # Generate local dev wrapper for one plugin
-    .\Install-Plugins.ps1 -Plugin dotnet -Local
 
     # Uninstall all plugins (including superpowers)
     .\Install-Plugins.ps1 -UninstallAll
@@ -65,7 +75,9 @@ param(
     [string]$Plugin,
     [switch]$Local,
     [switch]$NoSuperpowers,
-    [switch]$UninstallAll
+    [switch]$UninstallAll,
+    [switch]$Dotnet,
+    [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
@@ -73,10 +85,20 @@ $ErrorActionPreference = 'Stop'
 
 $pluginsRoot = Join-Path $PSScriptRoot 'plugins'
 
+# Defaults and feature flags
+$dotnet = $false
+if ($PSBoundParameters.ContainsKey('Dotnet')) { $dotnet = $Dotnet }
+$dryRun = $false
+if ($PSBoundParameters.ContainsKey('DryRun')) { $dryRun = $DryRun }
+
 $pluginDirs = if ($Plugin) {
     @(Join-Path $pluginsRoot $Plugin)
 } else {
-    Get-ChildItem $pluginsRoot -Directory | Select-Object -ExpandProperty FullName
+    $dirs = Get-ChildItem $pluginsRoot -Directory | Select-Object -ExpandProperty FullName
+    if (-not $dotnet) {
+        $dirs = $dirs | Where-Object { (Split-Path $_ -Leaf) -ne 'dotnet' }
+    }
+    $dirs
 }
 
 # ── LOCAL MODE ────────────────────────────────────────────────────────────────
@@ -133,18 +155,63 @@ function Get-InstalledPluginNames {
     return $names
 }
 
+# Check whether a remote repository contains a plugin.json in common locations
+function Test-RemotePluginJson {
+    param([string]$Owner, [string]$Repo)
+    $locations = @(
+        ".github/plugin/plugin.json",
+        "plugin.json",
+        ".plugin/plugin.json",
+        ".claude-plugin/plugin.json"
+    )
+    $branches = @("main","master")
+    foreach ($branch in $branches) {
+        foreach ($loc in $locations) {
+            $url = "https://raw.githubusercontent.com/$Owner/$Repo/$branch/$loc"
+            try {
+                $resp = Invoke-WebRequest -Method Head -Uri $url -UseBasicParsing -ErrorAction Stop
+                if ($resp.StatusCode -eq 200) { return $true }
+            } catch {
+                # continue searching other locations/branches
+            }
+        }
+    }
+    return $false
+}
+
 function Invoke-PluginReinstall {
     param(
         [string]$Name,
         [string]$Ref,
         [System.Collections.Generic.HashSet[string]]$Installed
     )
-    if ($Installed.Contains($Name)) {
-        Write-Host "  Uninstalling existing '$Name' ..." -ForegroundColor Yellow
-        copilot plugin uninstall $Name
+    # Ensure $Installed is a valid set; lazily populate if not provided
+    if ($null -eq $Installed) {
+        try {
+            $Installed = Get-InstalledPluginNames
+        } catch {
+            $Installed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        }
     }
-    Write-Host "Installing $Ref ..." -ForegroundColor Cyan
-    copilot plugin install $Ref
+    if ($dryRun) {
+        Write-Host "[DryRun] Would reinstall '$Name' from '$Ref'." -ForegroundColor Cyan
+        return
+    }
+    try {
+        if ($Installed -and $Installed.Contains($Name)) {
+            Write-Host "  Uninstalling existing '$Name' ..." -ForegroundColor Yellow
+            copilot plugin uninstall $Name
+        }
+    } catch {
+        Write-Warning "Failed to detect/uninstall existing plugin '$Name': $_"
+    }
+    Write-Host "Installing $Ref ..." -ForegroundColor Cyan
+    try {
+        copilot plugin install $Ref
+    } catch {
+        Write-Warning ("Install failed for {0}: {1}" -f $Ref, $_)
+        throw $_
+    }
 }
 
 # ── UNINSTALL-ALL MODE ────────────────────────────────────────────────────────
@@ -193,8 +260,22 @@ foreach ($dir in $pluginDirs) {
 
 # ── SUPERPOWERS MARKETPLACE ───────────────────────────────────────────────────
 if (-not $NoSuperpowers) {
-    Invoke-PluginReinstall -Name 'superpowers' -Ref 'obra/superpowers-marketplace' -Installed $installed
-    $count++
+    # Prefer marketplace install using the marketplace specifier (works like command line: superpowers@superpowers-marketplace)
+    $marketRef = 'superpowers@superpowers-marketplace'
+    try {
+        Invoke-PluginReinstall -Name 'superpowers' -Ref $marketRef -Installed $installed
+        $count++
+    } catch {
+        Write-Warning "Marketplace install failed for $marketRef. Falling back to repository-based check."
+        $owner = 'obra'; $repoName = 'superpowers-marketplace'
+        $hasPluginJson = Test-RemotePluginJson -Owner $owner -Repo $repoName
+        if (-not $hasPluginJson) {
+            Write-Warning "Skipping 'superpowers' — No plugin.json found in $owner/$repoName (common locations). Install skipped."
+        } else {
+            Invoke-PluginReinstall -Name 'superpowers' -Ref "$owner/$repoName" -Installed $installed
+            $count++
+        }
+    }
 }
 
 Write-Host ""
