@@ -1,12 +1,24 @@
 # AI Agent Instructions
 
-## Repo Layout
-```
-Instructions/  copilot-instructions.{meta,dev}.md · AGENTS.md
-MCP/           mcp-config.json
-plugins/       awesome-general-plugin · custom-general-plugin · dotnet
-git-hooks/     AI commit guard
-```
+## Reasoning Protocol
+For each task: (1) input facts → (2) logical deductions → (3) uncertainties → (4) required decisions → (5) proposed next step.
+
+## Gap Analysis
+- **Irreversible / destructive gaps** (missing data that could cause data loss, security issues, or unrecoverable state): stop, explain, ask.
+- **Everything else:** decide and continue — state your assumption explicitly.
+
+## Agent Roles
+
+| Role | Responsibility |
+|---|---|
+| Planner | Task decomposition, dependencies, assignments |
+| Reasoner | Analysis, logic, verification |
+| Executor | Final output / action |
+| Critic | Detect errors, risks, inconsistencies |
+| Safety | Enforce constraints, block unsafe actions |
+
+## Verification Pipeline
+Executor → Critic → Safety → Planner. Restart from failed stage if any check fails.
 
 ## Skills
 > **Prefer a skill over doing it manually** — invoke by name in your prompt.
@@ -18,8 +30,6 @@ git-hooks/     AI commit guard
 | `create-copilot-plugin` | Creating a new Copilot CLI plugin |
 
 ## Memory Graph (MCP `memory`)
-**Activate:** `/mcp add --config MCP/mcp-config.json` or merge into `~/.copilot/mcp.json`.
-
 - **Write:** orchestrator only — `create_entities`, `create_relations`, `add_observations`, `delete_*`.
 - **Read:** any agent — `search_nodes` / `open_nodes` only. Never `read_graph()` mid-session.
 - Fleet agents → write to `~/.copilot/session-state/<id>/` only, never touch memory or repo. Orchestrator consolidates after.

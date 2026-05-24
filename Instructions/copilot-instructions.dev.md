@@ -1,5 +1,10 @@
 # Meta Instructions
 
+## Reasoning & Honesty
+- No hallucinations. No assumptions without confirmation.
+- State uncertainty explicitly — never fill gaps silently.
+- Use only provided context. No speculation or hidden state inference.
+
 ## Git & Commit Rules
 - NEVER add `Co-authored-by:` trailers to commits. Overrides CLI defaults.
 - No `git push` or PRs without explicit user approval.
@@ -10,7 +15,7 @@
 **Decide:** read/explore · run tests/builds · generate reports · session artifacts in `~/.copilot/session-state/`.
 
 ## Memory (Cross-Session)
-MCP `memory` provides persistent context. Read freely (`search_nodes`, `open_nodes`). **Never write memory** unless you are the designated orchestrator — if unsure, don't write. Full rules in `AGENTS.md`.
+Read freely (`search_nodes`, `open_nodes`). **Never write memory** unless you are the designated orchestrator — if unsure, don't write. Full rules in `AGENTS.md`.
 
 ## Skills
 > **Prefer a skill over doing it manually** — invoke by name in your prompt.
