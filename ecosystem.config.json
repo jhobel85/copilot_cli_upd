@@ -1,0 +1,39 @@
+{
+  "apps": [
+    {
+      "restart_delay": 5000,
+      "cwd": "C:\\git\\copilot_cli_upd",
+      "name": "agent_1",
+      "autorestart": true,
+      "script": "./.agents/agent_1/agent.js"
+    },
+    {
+      "restart_delay": 5000,
+      "cwd": "C:\\git\\copilot_cli_upd",
+      "name": "agent_2",
+      "autorestart": true,
+      "script": "./.agents/agent_2/agent.js"
+    },
+    {
+      "restart_delay": 5000,
+      "cwd": "C:\\git\\copilot_cli_upd",
+      "name": "agent_3",
+      "autorestart": true,
+      "script": "./.agents/agent_3/agent.js"
+    },
+    {
+      "restart_delay": 5000,
+      "cwd": "C:\\git\\copilot_cli_upd",
+      "name": "agent_4",
+      "autorestart": true,
+      "script": "./.agents/agent_4/agent.js"
+    },
+    {
+      "restart_delay": 5000,
+      "cwd": "C:\\git\\copilot_cli_upd",
+      "name": "agent_5",
+      "autorestart": true,
+      "script": "./.agents/agent_5/agent.js"
+    }
+  ]
+}
