@@ -105,24 +105,68 @@ async function scanRepoHandler(args = {}) {
 async function analyzeHandler(args = {}) {
   const scan = args.scan || await scanRepoHandler({ path: args.path });
   const topLang = scan.dominantLanguage || Object.keys(scan.languages)[0] || 'unknown';
+
+  // Infer high-level purpose from manifests and repo layout
   let purpose = 'General codebase';
   if (scan.manifests.includes('package.json')) purpose = 'Node.js project (app or library)';
   else if (scan.manifests.includes('pyproject.toml')) purpose = 'Python project';
   else if (scan.manifests.includes('go.mod')) purpose = 'Go project';
+  else if ((scan.topFolders || []).includes('plugins')) purpose = 'Copilot CLI plugins collection';
 
+  // Parse README for title, intro and badges
+  let readmeTitle = null;
+  let readmeIntro = null;
+  const badges = [];
+  if (scan.readmeSummary) {
+    const lines = scan.readmeSummary.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    // title: first heading (# ...)
+    for (const l of lines) {
+      const m = l.match(/^#\s+(.*)/);
+      if (m) { readmeTitle = m[1]; break; }
+    }
+    // intro: first paragraph after title or first non-heading block
+    let para = [];
+    let sawTitle = false;
+    for (const l of lines) {
+      if (!sawTitle && /^#/.test(l)) { sawTitle = true; continue; }
+      if (sawTitle && l) { para.push(l); if (para.length>=2) break; }
+      if (!sawTitle && l && !/^#/.test(l)) { para.push(l); if (para.length>=2) break; }
+    }
+    readmeIntro = para.join(' ');
+
+    // badges: look for shields.io or badge image links
+    const badgeRegex = /!\[[^\]]*\]\((https?:\/\/[^)]+shields\.io[^)]*)\)|!\[[^\]]*\]\((https?:\/\/[^)]+badge.*?\.svg)\)|\[!\[[^\]]*\]\((https?:\/\/[^)]+)\)\]\((?:https?:\/\/[^)]+)\)/ig;
+    let m;
+    while ((m = badgeRegex.exec(scan.readmeSummary))) {
+      const url = m[1] || m[2] || m[3];
+      if (url) badges.push(url);
+    }
+  }
+
+  // Map repo layout to concise bullet list of capabilities/notes
   const bullets = [];
   if (scan.hasDockerfile) bullets.push('Containerized (Dockerfile)');
   if (scan.ciFiles.length) bullets.push('CI workflows present');
   if (scan.licensePresent) bullets.push('License present');
   if (!scan.ciFiles.length) bullets.push('No CI detected');
+  if ((scan.topFolders||[]).includes('Scripts')) bullets.push('Includes utility scripts (Scripts/)');
+  if ((scan.topFolders||[]).includes('plugins')) bullets.push('Contains plugin packages under plugins/');
+  if ((scan.topFolders||[]).includes('MCP')) bullets.push('Contains MCP server configurations');
 
   const elevator = `${purpose} primarily in ${topLang}.`;
+
+  // Generate prioritized actions with slightly smarter heuristics
   const actions = [];
   if (!scan.readmeSummary) actions.push({id:'add-readme', title:'Add or improve README', reason:'Missing or empty README', effort:'S'});
+  else if (!readmeTitle) actions.push({id:'improve-readme-title', title:'Add clear README title', reason:'No top-level title found', effort:'S'});
+
   if (!scan.ciFiles.length) actions.push({id:'add-ci', title:'Add CI workflow', reason:'No CI detected', effort:'M'});
   if (!scan.licensePresent) actions.push({id:'add-license', title:'Add license', reason:'No license file', effort:'S'});
 
-  return { purpose, elevator, bullets, actions };
+  // If this appears to be a plugin collection, suggest packaging and examples
+  if ((scan.topFolders||[]).includes('plugins')) actions.push({id:'add-plugin-readmes', title:'Add plugin-level README and install docs', reason:'Plugins need per-package docs', effort:'M'});
+
+  return { purpose, elevator, bullets, actions, readmeTitle, readmeIntro, badges };
 }
 
 async function suggestHandler(args = {}) {
